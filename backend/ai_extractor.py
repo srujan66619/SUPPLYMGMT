@@ -1,10 +1,12 @@
 import os
+import json
 from pydantic import BaseModel, Field
 from typing import Literal, Optional
 from google import genai
 from google.genai import types
 from google.genai.errors import APIError
 from dotenv import load_dotenv
+from fallback_extractor import extract_entities_deterministic
 
 load_dotenv()
 
@@ -49,10 +51,10 @@ Notice:
                 temperature=0.0,
             ),
         )
-        return NoticeInterpretation.model_validate_json(response.text).model_dump()
+        data = json.loads(response.text)
+        data["_fallback_used"] = False
+        return data
     except Exception as e:
-        # Return a controlled error that the fallback extractor can handle later
-        return {
-            "error": "gemini_extraction_failed",
-            "message": str(e)
-        }
+        print(f"Gemini API Error: {e}")
+        # Return fallback deterministic extraction
+        return extract_entities_deterministic(notice_text)

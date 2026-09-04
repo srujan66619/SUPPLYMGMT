@@ -84,12 +84,51 @@ def calculate_impact(db, disruption_id: int) -> Dict[str, Any]:
             customer = order.customer
             customers_impacted.add(customer.id)
             
-            risk = "Medium"
-            if delay_days > 7 or customer.priority_level == 1:
+            shortage_percentage = (shortage / order.quantity) * 100 if order.quantity > 0 else 0
+            
+            score = 0
+            reasons = []
+            
+            # Customer Priority
+            if customer.priority_level == 1:
+                score += 30
+                reasons.append("Customer priority is critical (Level 1).")
+            elif customer.priority_level == 2:
+                score += 15
+                reasons.append("Customer priority is high (Level 2).")
+            else:
+                reasons.append("Customer priority is normal (Level 3).")
+                
+            # Shortage Percentage
+            if shortage_percentage > 0:
+                shortage_score = min(30, int(shortage_percentage * 0.3))
+                score += shortage_score
+                reasons.append(f"{int(shortage_percentage)}% shortage ({shortage} units missing).")
+                
+            # Delay Severity
+            delay_score = min(30, delay_days * 5)
+            score += delay_score
+            reasons.append(f"Projected delay is {delay_days} days.")
+            
+            # Promise Date Proximity
+            days_to_promise = (order.promise_date - datetime.datetime.now()).days
+            if days_to_promise <= 3:
+                score += 20
+                reasons.append("Promise date is within 3 days.")
+            elif days_to_promise <= 7:
+                score += 10
+                reasons.append("Promise date is within 7 days.")
+                
+            # Classification
+            if score >= 75:
                 risk = "Critical"
                 critical_orders_count += 1
-            elif delay_days > 3 or customer.priority_level == 2:
+            elif score >= 50:
                 risk = "High"
+            elif score >= 25:
+                risk = "Medium"
+            else:
+                risk = "Low"
                 
             max_delay = max(max_delay, delay_days)
             
@@ -103,8 +142,14 @@ def calculate_impact(db, disruption_id: int) -> Dict[str, Any]:
                 "promise_date": order.promise_date.strftime("%b %d, %Y"),
                 "projected_fulfillment_date": projected_fulfillment_date.strftime("%b %d, %Y"),
                 "delay_days": delay_days,
-                "risk": risk
+                "priority": customer.priority_level,
+                "risk": risk,
+                "score": score,
+                "reasons": reasons
             })
+            
+    # Sort orders by score descending
+    affected_orders.sort(key=lambda x: x["score"], reverse=True)
             
     # Trace path for visual
     trace_path = []

@@ -63,11 +63,10 @@ def fuzzy_match(query: str, candidates: dict, threshold=45, ambiguity_margin=5):
 def parse_shipment_id(reference: str):
     if not reference:
         return None
-    # Extract digits, e.g. "SHP-1042" -> 1042
-    match = re.search(r'\d+', reference)
-    if match:
-        return int(match.group())
-    return None
+    # For Phase 17 we changed Shipment.id to String like "SHP-1042"
+    # If the user passed "1042", we could format it, but the DB expects the exact string.
+    # We will just return the cleaned uppercase string.
+    return reference.strip().upper()
 
 def resolve_entities(db, extracted_data: dict) -> dict:
     import models
@@ -130,13 +129,13 @@ def resolve_entities(db, extracted_data: dict) -> dict:
     if ship_ref:
         ship_id = parse_shipment_id(ship_ref)
         if ship_id:
-            db_ship = db.query(models.Shipment).filter(models.Shipment.id == ship_id).first()
+            db_ship = db.query(models.Shipment).filter(models.Shipment.id.ilike(f"%{ship_id}%")).first()
             if db_ship:
                 results['Shipment'] = {
                     "query": ship_ref,
                     "status": "VERIFIED",
                     "confidence": "100%",
-                    "matched_record": {"id": f"SHP-{db_ship.id}", "status": db_ship.status}
+                    "matched_record": {"id": db_ship.id, "status": db_ship.status}
                 }
             else:
                 results['Shipment'] = {

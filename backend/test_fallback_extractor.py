@@ -1,0 +1,21 @@
+import pytest
+from fallback_extractor import extract_entities_deterministic
+import ai_extractor
+from unittest.mock import patch
+
+def test_deterministic_extraction():
+    text = "Supplier: Apex Components. Delay due to incident. Shipment SHP-1042."
+    res = extract_entities_deterministic(text)
+    
+    assert res["_fallback_used"] == True
+    assert res["supplier_reference"] == "Apex Components."
+    assert res["shipment_reference"] == "SHP-1042"
+    assert res["disruption_type"] == "carrier_delay"
+
+@patch('ai_extractor.client.models.generate_content')
+def test_fallback_called_on_failure(mock_generate):
+    mock_generate.side_effect = Exception("API Timeout")
+    
+    res = ai_extractor.extract_disruption_info("Test Product AX-500 delayed.")
+    assert res["_fallback_used"] == True
+    assert res["product_reference"] == "AX-500"

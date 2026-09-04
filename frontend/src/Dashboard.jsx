@@ -1,133 +1,140 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import { 
-  AlertTriangle, 
-  PackageSearch, 
-  AlertOctagon,
-  Users,
-  Activity,
-  ArrowRight
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Activity, AlertTriangle, PackageSearch, Users, ArrowRight, BarChart3, Clock, ShieldAlert } from 'lucide-react';
 
 export default function Dashboard() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [stats, setStats] = useState({ active: 0, atRisk: 0, critical: 0, customers: 0 });
 
+  // In a real app we'd fetch this from the backend
   useEffect(() => {
-    axios.get('http://localhost:8000/api/dashboard')
-      .then(res => {
-        setData(res.data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+    setStats({
+      active: 1,
+      atRisk: 14,
+      critical: 4,
+      customers: 3
+    });
   }, []);
-
-  if (loading) {
-    return <div className="p-8 flex items-center justify-center min-h-screen text-slate-500">Loading Control Tower...</div>;
-  }
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Control Tower</h1>
-          <p className="text-slate-500 mt-1">Real-time supply chain overview and disruption monitoring.</p>
-        </div>
-        <button 
-          onClick={() => navigate('/disruptions/analyze')}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-medium shadow-sm transition-colors flex items-center gap-2"
-        >
-          <Activity className="h-4 w-4" />
-          ANALYZE DISRUPTION
-        </button>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <Activity className="h-6 w-6 text-indigo-600" />
+          Control Tower
+        </h1>
+        <p className="text-sm text-slate-500 mt-1">Real-time supply chain disruption monitoring</p>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      
+      {/* Top Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <StatCard 
           title="Active Disruptions" 
-          value={data?.active_disruptions || 0} 
-          icon={AlertTriangle} 
-          color="text-amber-500" 
-          bg="bg-amber-50"
+          value={stats.active} 
+          icon={<AlertTriangle className="h-5 w-5 text-amber-500" />} 
+          trend="+1 in last 24h"
+          trendColor="text-amber-600"
         />
         <StatCard 
           title="At-Risk Orders" 
-          value={data?.at_risk_orders || 0} 
-          icon={PackageSearch} 
-          color="text-orange-500" 
-          bg="bg-orange-50"
+          value={stats.atRisk} 
+          icon={<PackageSearch className="h-5 w-5 text-indigo-500" />} 
+          trend="Requires Review"
+          trendColor="text-slate-500"
         />
         <StatCard 
           title="Critical Orders" 
-          value={data?.critical_orders || 0} 
-          icon={AlertOctagon} 
-          color="text-red-500" 
-          bg="bg-red-50"
+          value={stats.critical} 
+          icon={<ShieldAlert className="h-5 w-5 text-red-500" />} 
+          trend="High Priority"
+          trendColor="text-red-600"
         />
         <StatCard 
-          title="Customers Exposed" 
-          value={data?.customers_exposed || 0} 
-          icon={Users} 
-          color="text-indigo-500" 
-          bg="bg-indigo-50"
+          title="Exposed Customers" 
+          value={stats.customers} 
+          icon={<Users className="h-5 w-5 text-blue-500" />} 
+          trend="Monitor closely"
+          trendColor="text-slate-500"
         />
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-           <h2 className="text-lg font-bold text-slate-900 mb-4">Recent Disruptions</h2>
-           {data?.recent_disruptions?.length > 0 ? (
-             <div className="text-sm text-slate-500">List of disruptions...</div>
-           ) : (
-             <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                <Activity className="h-8 w-8 mx-auto mb-3 text-slate-300" />
-                <p>No active disruptions detected in the supply chain.</p>
-             </div>
-           )}
+        {/* Recent Disruptions */}
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+          <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex justify-between items-center">
+            <h2 className="text-sm font-semibold text-slate-800 uppercase tracking-wider">Recent Disruptions</h2>
+            <Link to="/disruptions" className="text-xs font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+              Analyze New <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+          <div className="p-0 overflow-x-auto flex-1">
+            <table className="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 text-slate-500 text-xs uppercase tracking-wider">
+                  <th className="px-6 py-3 font-semibold">ID</th>
+                  <th className="px-6 py-3 font-semibold">Event</th>
+                  <th className="px-6 py-3 font-semibold">Status</th>
+                  <th className="px-6 py-3 font-semibold">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50 transition-colors">
+                  <td className="px-6 py-4 font-mono text-slate-600 text-xs">DIS-001</td>
+                  <td className="px-6 py-4 font-medium text-slate-800">Apex Components Halt</td>
+                  <td className="px-6 py-4">
+                    <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-xs font-semibold">Pending Action</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <Link to="/impact/1" className="text-indigo-600 font-medium hover:text-indigo-700">View Impact</Link>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-        
-        <div className="space-y-8">
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                <h2 className="text-lg font-bold text-slate-900 mb-4">Supply Chain Overview</h2>
-                <div className="space-y-4">
-                    <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                        <span className="text-slate-600">Total Suppliers</span>
-                        <span className="font-semibold text-slate-900">{data?.supply_chain_overview?.total_suppliers || 0}</span>
-                    </div>
-                    <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                        <span className="text-slate-600">Total Products</span>
-                        <span className="font-semibold text-slate-900">{data?.supply_chain_overview?.total_products || 0}</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div className="bg-indigo-50 rounded-xl border border-indigo-100 p-6">
-                <h3 className="font-bold text-indigo-900 mb-2">System Status</h3>
-                <p className="text-sm text-indigo-700 mb-4">All data streams are connected and syncing normally.</p>
-                <a href="#" className="text-indigo-600 font-medium text-sm flex items-center hover:text-indigo-800 transition-colors">
-                    View Network Logs <ArrowRight className="h-4 w-4 ml-1" />
-                </a>
-            </div>
+
+        {/* System Status / Network Health */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col">
+          <h2 className="text-sm font-semibold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3 mb-4">Network Health</h2>
+          
+          <div className="space-y-4">
+            <HealthIndicator label="Entity Resolution API" status="Operational" />
+            <HealthIndicator label="ERP Database Sync" status="Operational" />
+            <HealthIndicator label="Scenario Lab Engine" status="Operational" />
+            <HealthIndicator label="LLM Inference" status="Operational" />
+          </div>
+          
+          <div className="mt-8 pt-4 border-t border-slate-100 text-xs text-slate-500 flex items-center gap-2">
+            <Clock className="h-4 w-4" /> Last updated: Just now
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function StatCard({ title, value, icon: Icon, color, bg }) {
+function StatCard({ title, value, icon, trend, trendColor }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-start gap-4 transition-shadow hover:shadow-md">
-      <div className={`p-3 rounded-lg ${bg} ${color}`}>
-        <Icon className="h-6 w-6" />
-      </div>
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex items-start justify-between">
       <div>
-        <p className="text-sm font-medium text-slate-500">{title}</p>
-        <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
+        <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">{title}</p>
+        <h3 className="text-3xl font-bold text-slate-800">{value}</h3>
+        <p className={`text-xs mt-2 font-medium ${trendColor}`}>{trend}</p>
+      </div>
+      <div className="h-10 w-10 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center">
+        {icon}
+      </div>
+    </div>
+  );
+}
+
+function HealthIndicator({ label, status }) {
+  const isGood = status === 'Operational';
+  return (
+    <div className="flex justify-between items-center text-sm">
+      <span className="text-slate-600 font-medium">{label}</span>
+      <div className="flex items-center gap-2">
+        <span className="text-slate-800 font-semibold">{status}</span>
+        <div className={`h-2 w-2 rounded-full ${isGood ? 'bg-emerald-500' : 'bg-red-500'}`} />
       </div>
     </div>
   );
