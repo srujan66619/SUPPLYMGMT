@@ -83,11 +83,13 @@ def calculate_ripple_effects(db, disruption_id: int, target_order_id: int):
         base_shortage = baseline_status[o.id]["shortage"]
         new_shortage = realloc_status[o.id]["shortage"]
         
+        ord_id_str = str(o.id) if str(o.id).startswith("ORD-") else f"ORD-{o.id}"
+        
         if base_shortage > 0 and new_shortage == 0:
-            newly_protected.append(f"ORD-{o.id}")
+            newly_protected.append(ord_id_str)
         elif base_shortage == 0 and new_shortage > 0:
             newly_exposed.append({
-                "order_id": f"ORD-{o.id}",
+                "order_id": ord_id_str,
                 "customer": o.customer.name,
                 "new_shortage": new_shortage
             })

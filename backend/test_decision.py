@@ -6,7 +6,13 @@ import datetime
 from main import app, get_db
 from models import Base, Supplier, Product, Warehouse, Inventory, Shipment, Customer, Order, Disruption, Decision
 
-engine = create_engine('sqlite:///:memory:', connect_args={"check_same_thread": False})
+from sqlalchemy.pool import StaticPool
+
+engine = create_engine(
+    'sqlite:///:memory:',
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def override_get_db():
@@ -16,11 +22,11 @@ def override_get_db():
     finally:
         db.close()
 
-app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
 @pytest.fixture(autouse=True)
 def setup_db():
+    app.dependency_overrides[get_db] = override_get_db
     Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
     
@@ -32,7 +38,9 @@ def setup_db():
     db.commit()
     
     yield
+    db.close()
     Base.metadata.drop_all(bind=engine)
+    app.dependency_overrides.clear()
 
 def test_submit_decision_creates_audit_trail_and_does_not_modify_inventory():
     # Submit decision

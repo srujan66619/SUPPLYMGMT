@@ -18,9 +18,9 @@ export default function DecisionCenter() {
     const fetchData = async () => {
       try {
         const [recRes, ordRes, decRes] = await Promise.all([
-          axios.get(`http://localhost:8000/api/disruptions/${disruptionId}/recommendation`),
-          axios.get(`http://localhost:8000/api/disruptions/${disruptionId}/affected-orders`),
-          axios.get(`http://localhost:8000/api/disruptions/${disruptionId}/decisions`)
+          axios.get(`/api/disruptions/${disruptionId}/recommendation`),
+          axios.get(`/api/disruptions/${disruptionId}/affected-orders`),
+          axios.get(`/api/disruptions/${disruptionId}/decisions`)
         ]);
         setData(recRes.data);
         setOrders(ordRes.data);
@@ -42,8 +42,8 @@ export default function DecisionCenter() {
         selected_action: action,
         operator_notes: operatorNotes[orderId] || ""
       };
-      await axios.post(`http://localhost:8000/api/decisions`, payload);
-      const decRes = await axios.get(`http://localhost:8000/api/disruptions/${disruptionId}/decisions`);
+      await axios.post(`/api/decisions`, payload);
+      const decRes = await axios.get(`/api/disruptions/${disruptionId}/decisions`);
       setDecisions(decRes.data);
     } catch (err) {
       console.error(err);

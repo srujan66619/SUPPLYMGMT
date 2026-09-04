@@ -11,7 +11,7 @@ export default function ImpactTrace() {
   const [selectedNode, setSelectedNode] = useState(null);
 
   useEffect(() => {
-    axios.get(`http://localhost:8000/api/impact/${id}`)
+    axios.get(`/api/impact/${id}`)
       .then(res => {
         setData(res.data);
         setLoading(false);

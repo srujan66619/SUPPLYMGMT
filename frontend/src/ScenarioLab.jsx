@@ -13,7 +13,7 @@ export default function ScenarioLab() {
   const id = 1;
 
   useEffect(() => {
-    axios.get(`http://localhost:8000/api/disruptions/${id}/recommendation`)
+    axios.get(`/api/disruptions/${id}/recommendation`)
       .then(res => {
         setData(res.data);
         setLoading(false);

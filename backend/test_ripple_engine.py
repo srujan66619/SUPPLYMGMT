@@ -44,8 +44,10 @@ def test_ripple_effect_reallocation(db_session):
     # If we target Order B, it gets 100. Order A gets 20 (shortage 80).
     # So Order A will be newly exposed.
     
-    res = calculate_ripple_effects(db_session, 1, 2)
+    target_order_id = db_session.query(Order).filter_by(customer_id=2).first().id
+    res = calculate_ripple_effects(db_session, 1, target_order_id)
     assert res is not None
     assert res["ripple_effect_detected"] is True
     assert len(res["newly_exposed_orders"]) == 1
-    assert res["newly_exposed_orders"][0]["order_id"] == "ORD-1"
+    expected_exposed_id = db_session.query(Order).filter_by(customer_id=1).first().id
+    assert res["newly_exposed_orders"][0]["order_id"] == expected_exposed_id

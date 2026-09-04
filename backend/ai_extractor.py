@@ -9,7 +9,10 @@ from dotenv import load_dotenv
 import time
 from fallback_extractor import extract_entities_deterministic
 
-load_dotenv()
+# Load .env from backend dir first, then project root as fallback
+_this_dir = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(_this_dir, ".env"))
+load_dotenv(os.path.join(os.path.dirname(_this_dir), ".env"))
 
 # Client picks up GEMINI_API_KEY from environment
 client = genai.Client()

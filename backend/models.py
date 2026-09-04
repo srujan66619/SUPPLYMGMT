@@ -107,7 +107,13 @@ class Evidence(Base):
     __tablename__ = "evidence"
     id = Column(Integer, primary_key=True, index=True)
     disruption_id = Column(Integer, ForeignKey("disruptions.id"))
-    evidence_text = Column(String)
+    order_id = Column(String, nullable=True)
+    claim = Column(String)
+    source_records = Column(JSON)
+    source_values = Column(JSON)
+    calculation = Column(JSON)
+    impact = Column(String)
+    evidence_text = Column(String, nullable=True)
     confidence = Column(Float)
 
 

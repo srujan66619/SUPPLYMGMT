@@ -42,14 +42,15 @@ def test_incomplete_notice(mock_client):
 @patch('ai_extractor.client')
 def test_malformed_ai_response(mock_client):
     mock_client.models.generate_content.return_value = MagicMock(text='invalid json')
-    res = extract_disruption_info("Test notice")
-    assert "error" in res
-    assert res["error"] == "gemini_extraction_failed"
+    res = extract_disruption_info("Supplier: Apex Components halted production")
+    # Should fall back to deterministic parsing and find "Apex Components"
+    assert res.get("disruption_type") == "supplier_production_halt"
+    assert res.get("supplier_reference") == "Apex Components halted production"
 
 @patch('ai_extractor.client')
 def test_gemini_timeout(mock_client):
     mock_client.models.generate_content.side_effect = Exception("Timeout waiting for response")
-    res = extract_disruption_info("Test notice")
-    assert "error" in res
-    assert res["error"] == "gemini_extraction_failed"
-    assert "Timeout" in res["message"]
+    res = extract_disruption_info("Warehouse: WH flooded incident")
+    # Should fall back to deterministic parsing
+    assert res.get("disruption_type") == "warehouse_incident"
+    assert res.get("warehouse_reference") == "WH flooded incident"

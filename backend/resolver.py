@@ -60,13 +60,10 @@ def fuzzy_match(query: str, candidates: dict, threshold=45, ambiguity_margin=5):
             
     return "VERIFIED", best['id'], best['score'] / 100.0, sorted_ids
 
-def parse_shipment_id(reference: str):
-    if not reference:
+def parse_shipment_id(id_str: str) -> str:
+    if not id_str or str(id_str).strip().upper() == "NO SHIPMENT ID":
         return None
-    # For Phase 17 we changed Shipment.id to String like "SHP-1042"
-    # If the user passed "1042", we could format it, but the DB expects the exact string.
-    # We will just return the cleaned uppercase string.
-    return reference.strip().upper()
+    return str(id_str).strip().upper()
 
 def resolve_entities(db, extracted_data: dict) -> dict:
     import models

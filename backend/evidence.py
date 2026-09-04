@@ -58,7 +58,7 @@ def generate_evidence_for_disruption(db, disruption_id: int):
             projected_date = order.promise_date + datetime.timedelta(days=delay_days_incurred)
             delay_days = delay_days_incurred
             
-            ord_id_str = f"ORD-{order.id}"
+            ord_id_str = str(order.id) if str(order.id).startswith("ORD-") else f"ORD-{order.id}"
             claim_text = f"{ord_id_str} is delayed by {delay_days} days due to a {shortage} unit shortage."
             
             source_records = {

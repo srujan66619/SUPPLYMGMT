@@ -26,7 +26,7 @@ export default function DisruptionAnalyzer() {
     setAnalysis(null);
     setVerification(null);
     try {
-      const res = await axios.post('http://localhost:8000/api/extract', { text: cleanNotice });
+      const res = await axios.post('/api/extract', { text: cleanNotice });
       setAnalysis(res.data);
     } catch (err) {
       setError(err.response?.data?.detail || 'ANALYSIS FAILED');
@@ -145,7 +145,7 @@ export default function DisruptionAnalyzer() {
                     onClick={async () => {
                       setVerifying(true);
                       try {
-                        const res = await axios.post('http://localhost:8000/api/resolve', analysis);
+                        const res = await axios.post('/api/resolve', analysis);
                         setVerification(res.data);
                       } catch (err) {
                         console.error(err);

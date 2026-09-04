@@ -37,8 +37,8 @@ def test_generate_evidence(db_session):
     assert isinstance(res, list)
     assert len(res) == 1
     ev = res[0]
-    
-    assert ev["order_id"] == "ORD-1"
+    expected_order_id = db_session.query(Order).first().id
+    assert ev["order_id"] == expected_order_id
     assert "claim" in ev
     assert "source_records" in ev
     assert ev["source_records"]["Product"] == "PRD"

@@ -44,5 +44,5 @@ def test_case_and_punctuation():
 
 def test_shipment_parsing():
     assert parse_shipment_id("SHP-1042") == "SHP-1042"
-    assert parse_shipment_id("1042") == 1042
+    assert parse_shipment_id("1042") == "1042"
     assert parse_shipment_id("No Shipment ID") == None
