@@ -2,6 +2,7 @@ import React from 'react'
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
 import Dashboard from './Dashboard'
 import DisruptionAnalyzer from './DisruptionAnalyzer'
+import ImpactTrace from './ImpactTrace'
 import { 
   LayoutDashboard, 
   AlertTriangle, 
@@ -81,6 +82,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/disruptions/analyze" element={<DisruptionAnalyzer />} />
+            <Route path="/impact/:id" element={<ImpactTrace />} />
           </Routes>
         </main>
       </div>

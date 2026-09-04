@@ -48,6 +48,25 @@ def verify_disruption_entities(disruption_id: int, req: VerifyRequest, db: Sessi
     results = resolve_entities(db, req.extracted_data)
     return results
 
+@router.post("/disruptions/{disruption_id}/confirm")
+def confirm_disruption_entities(disruption_id: int, req: VerifyRequest, db: Session = Depends(get_db)):
+    disruption = db.query(models.Disruption).filter(models.Disruption.id == disruption_id).first()
+    if not disruption:
+        raise HTTPException(status_code=404, detail="Disruption not found")
+    disruption.extracted_entities = req.extracted_data
+    disruption.status = "analyzed"
+    db.commit()
+    return {"status": "success", "id": disruption.id}
+
+from impact_engine import calculate_impact
+
+@router.get("/impact/{disruption_id}")
+def get_disruption_impact(disruption_id: int, db: Session = Depends(get_db)):
+    result = calculate_impact(db, disruption_id)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
+
 @router.get("/health")
 def health_check():
     return {"status": "ok"}

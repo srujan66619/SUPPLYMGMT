@@ -112,11 +112,26 @@ Apex Components`;
             )}
           </div>
           
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden h-full">
-            <div className="bg-slate-50 border-b border-slate-200 px-4 py-3">
+          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden h-full flex flex-col">
+            <div className="bg-slate-50 border-b border-slate-200 px-4 py-3 flex justify-between items-center">
               <h3 className="font-semibold text-slate-800 text-sm uppercase tracking-wider">DATABASE VERIFICATION</h3>
+              {!verifying && verification && (
+                <button
+                  onClick={async () => {
+                    try {
+                      await axios.post(`http://localhost:8000/api/disruptions/${success.id}/confirm`, { extracted_data: verification });
+                      navigate(`/impact/${success.id}`);
+                    } catch (err) {
+                      setError(err.response?.data?.detail || 'Failed to confirm impact');
+                    }
+                  }}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 text-xs rounded font-medium transition-colors"
+                >
+                  Calculate Impact &rarr;
+                </button>
+              )}
             </div>
-            <div className="p-4 flex flex-col gap-3 text-sm">
+            <div className="p-4 flex flex-col gap-3 text-sm flex-1">
               {verifying && <div className="text-slate-500">Verifying extracted entities...</div>}
               {verification && Object.entries(verification).map(([entityType, result]) => (
                 <div key={entityType} className="border-b border-slate-100 pb-2 last:border-0 last:pb-0">
