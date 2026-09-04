@@ -6,3 +6,5 @@ python-dotenv
 google-genai
 pytest
 httpx
+thefuzz
+python-Levenshtein

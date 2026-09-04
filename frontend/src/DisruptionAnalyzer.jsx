@@ -8,6 +8,10 @@ export default function DisruptionAnalyzer() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState(null);
+  const [verifying, setVerifying] = useState(false);
+  const [verification, setVerification] = useState(null);
   const navigate = useNavigate();
 
   const exampleNotice = `Due to an unexpected production shutdown at our Hyderabad facility,
@@ -30,14 +34,32 @@ Apex Components`;
     setError('');
     setLoading(true);
     setSuccess(null);
+    setAnalysis(null);
+    setAnalyzing(false);
+    setVerification(null);
+    setVerifying(false);
     
     try {
       const res = await axios.post('http://localhost:8000/api/disruptions', { notice });
       setSuccess(res.data);
+      
+      // Phase 3: Transition to analysis
+      setAnalyzing(true);
+      const analysisRes = await axios.post('http://localhost:8000/api/disruptions/analyze', { notice });
+      setAnalysis(analysisRes.data);
+      setAnalyzing(false);
+      
+      if (!analysisRes.data.error) {
+        setVerifying(true);
+        const verifyRes = await axios.post(`http://localhost:8000/api/disruptions/${res.data.id}/verify`, { extracted_data: analysisRes.data });
+        setVerification(verifyRes.data);
+      }
     } catch (err) {
       setError(err.response?.data?.detail || err.message || 'An error occurred during submission.');
     } finally {
       setLoading(false);
+      setAnalyzing(false);
+      setVerifying(false);
     }
   };
 
@@ -48,13 +70,80 @@ Apex Components`;
         <p className="text-slate-500 mt-1">Paste the notice exactly as received.</p>
       </div>
       
-      {success && (
+      {success && !analysis && !analyzing && (
         <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex items-start gap-3">
           <CheckCircle2 className="h-5 w-5 text-emerald-500 mt-0.5" />
           <div>
             <h3 className="font-semibold text-emerald-800">Disruption Submitted Successfully</h3>
             <p className="text-emerald-700 text-sm mt-1 font-mono">Disruption ID: {success.id}</p>
-            <p className="text-emerald-600 text-sm mt-2">Transitioning to analysis engine...</p>
+          </div>
+        </div>
+      )}
+
+      {analyzing && (
+        <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg flex items-start gap-3">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600 mt-0.5"></div>
+          <div>
+            <h3 className="font-semibold text-indigo-800">Understanding Notice...</h3>
+            <p className="text-indigo-700 text-sm mt-1">Analyzing context using AI...</p>
+          </div>
+        </div>
+      )}
+
+      {analysis && (
+        <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden h-full">
+            <div className="bg-slate-50 border-b border-slate-200 px-4 py-3">
+              <h3 className="font-semibold text-slate-800 text-sm uppercase tracking-wider">AI INTERPRETATION</h3>
+              {analysis.error && (
+                <p className="text-red-500 text-xs mt-1">Fallback: {analysis.message}</p>
+              )}
+            </div>
+            {!analysis.error && (
+              <div className="p-4 flex flex-col gap-3 text-sm">
+                <div><span className="text-slate-500">Disruption Type:</span> <span className="font-medium">{analysis.disruption_type || 'null'}</span></div>
+                <div><span className="text-slate-500">Supplier:</span> <span className="font-medium">{analysis.supplier_reference || 'null'}</span></div>
+                <div><span className="text-slate-500">Product:</span> <span className="font-medium">{analysis.product_reference || 'null'}</span></div>
+                <div><span className="text-slate-500">Shipment:</span> <span className="font-medium">{analysis.shipment_reference || 'null'}</span></div>
+                <div><span className="text-slate-500">Warehouse:</span> <span className="font-medium">{analysis.warehouse_reference || 'null'}</span></div>
+                <div><span className="text-slate-500">Carrier:</span> <span className="font-medium">{analysis.carrier_reference || 'null'}</span></div>
+                <div><span className="text-slate-500">Confidence:</span> <span className="font-medium">{analysis.confidence || 'null'}</span></div>
+              </div>
+            )}
+          </div>
+          
+          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden h-full">
+            <div className="bg-slate-50 border-b border-slate-200 px-4 py-3">
+              <h3 className="font-semibold text-slate-800 text-sm uppercase tracking-wider">DATABASE VERIFICATION</h3>
+            </div>
+            <div className="p-4 flex flex-col gap-3 text-sm">
+              {verifying && <div className="text-slate-500">Verifying extracted entities...</div>}
+              {verification && Object.entries(verification).map(([entityType, result]) => (
+                <div key={entityType} className="border-b border-slate-100 pb-2 last:border-0 last:pb-0">
+                  <div className="flex justify-between items-start mb-1">
+                    <span className="font-medium text-slate-800">{entityType}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      result.status === 'VERIFIED' ? 'bg-emerald-100 text-emerald-700' :
+                      result.status === 'NEEDS VERIFICATION' ? 'bg-amber-100 text-amber-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {result.status}
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-600">Query: "{result.query}"</div>
+                  {result.status === 'VERIFIED' && result.matched_record && (
+                    <div className="text-xs font-medium text-emerald-600 mt-1">
+                      Matched: {result.matched_record.name || result.matched_record.id} ({result.confidence})
+                    </div>
+                  )}
+                  {result.status === 'NEEDS VERIFICATION' && (
+                    <div className="text-xs text-amber-600 mt-1">
+                      Ambiguous match. Candidates: {result.candidates.map(c => c.matched_term).join(', ')}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

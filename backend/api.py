@@ -28,6 +28,26 @@ def create_disruption(disruption: DisruptionCreate, db: Session = Depends(get_db
         "status": db_disruption.status
     }
 
+from .ai_extractor import extract_disruption_info
+
+class AnalyzeRequest(BaseModel):
+    notice: str
+
+@router.post("/disruptions/analyze")
+def analyze_disruption_endpoint(req: AnalyzeRequest):
+    result = extract_disruption_info(req.notice)
+    return result
+
+class VerifyRequest(BaseModel):
+    extracted_data: dict
+
+from resolver import resolve_entities
+
+@router.post("/disruptions/{disruption_id}/verify")
+def verify_disruption_entities(disruption_id: int, req: VerifyRequest, db: Session = Depends(get_db)):
+    results = resolve_entities(db, req.extracted_data)
+    return results
+
 @router.get("/health")
 def health_check():
     return {"status": "ok"}
