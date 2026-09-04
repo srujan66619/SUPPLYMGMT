@@ -6,6 +6,7 @@ from google import genai
 from google.genai import types
 from google.genai.errors import APIError
 from dotenv import load_dotenv
+import time
 from fallback_extractor import extract_entities_deterministic
 
 load_dotenv()
@@ -41,7 +42,10 @@ Notice:
 {notice_text}
 """
     try:
-        # Bounded request with timeout (timeout parameter can be passed in config if supported, otherwise we rely on standard timeouts)
+        # Bounded request with timeout
+        print(f"[PERF] Initiating Gemini API call...")
+        start_time = time.time()
+        
         response = client.models.generate_content(
             model='gemini-3.5-flash-lite',
             contents=prompt,
@@ -51,6 +55,10 @@ Notice:
                 temperature=0.0,
             ),
         )
+        
+        elapsed = round((time.time() - start_time) * 1000, 2)
+        print(f"[PERF] Gemini API call succeeded in {elapsed}ms")
+        
         data = json.loads(response.text)
         data["_fallback_used"] = False
         return data

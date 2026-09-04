@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import axios from 'axios';
 import { Activity, AlertCircle, Home, Database, Box, Users, Truck, Factory, Scale, FlaskConical, Map } from 'lucide-react';
 
 import Dashboard from './Dashboard';
@@ -9,7 +10,7 @@ import ScenarioLab from './ScenarioLab';
 import DecisionCenter from './DecisionCenter';
 import DataTable from './DataTable';
 
-function Sidebar() {
+function Sidebar({ lastApiLatency }) {
   const location = useLocation();
 
   return (
@@ -44,8 +45,21 @@ function Sidebar() {
           <NavItem to="/data/customers" icon={<Users className="h-4 w-4" />} label="Customers" current={location.pathname} />
         </nav>
       </div>
-      
-      <div className="p-4 border-t border-slate-800">
+
+      <div className="p-4 border-t border-indigo-900/50">
+        <div className="bg-indigo-900/50 rounded-lg p-3 flex flex-col items-center justify-center border border-indigo-800/50 mb-4">
+          <div className="flex items-center gap-2 text-indigo-400 mb-1">
+            <Activity className="h-4 w-4" />
+            <span className="text-[10px] font-bold uppercase tracking-widest">System Latency</span>
+          </div>
+          <div className={`text-lg font-mono font-bold ${
+            lastApiLatency > 1000 ? 'text-amber-400' : 'text-emerald-400'
+          }`}>
+            {lastApiLatency ? `${lastApiLatency} ms` : '--- ms'}
+          </div>
+          <div className="text-[9px] text-indigo-500 mt-1">NEXUSFLOW AI ENGINE</div>
+        </div>
+        
         <div className="flex items-center gap-3 text-sm">
           <div className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold">
             JD
@@ -78,21 +92,49 @@ const NavItem = ({ to, icon, label, current }) => {
 function App() {
   return (
     <Router>
-      <div className="flex h-screen overflow-hidden bg-slate-50">
-        <Sidebar />
-        <main className="flex-1 overflow-y-auto">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/disruptions" element={<DisruptionAnalyzer />} />
-            <Route path="/impact/:id" element={<ImpactTrace />} />
-            <Route path="/scenarios" element={<ScenarioLab />} />
-            <Route path="/decisions" element={<DecisionCenter />} />
-            <Route path="/data/:type" element={<DataTable />} />
-          </Routes>
-        </main>
-      </div>
+      <AppContent />
     </Router>
   )
 }
 
-export default App
+function AppContent() {
+  const [lastApiLatency, setLastApiLatency] = useState(0);
+
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use((response) => {
+      const pTime = response.headers['x-process-time'];
+      if (pTime) {
+        setLastApiLatency(parseFloat(pTime));
+      }
+      return response;
+    }, (error) => {
+      const pTime = error.response?.headers?.['x-process-time'];
+      if (pTime) {
+        setLastApiLatency(parseFloat(pTime));
+      }
+      return Promise.reject(error);
+    });
+    
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, []);
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-slate-50">
+      <Sidebar lastApiLatency={lastApiLatency} />
+      <main className="flex-1 overflow-y-auto">
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/disruptions" element={<DisruptionAnalyzer />} />
+          <Route path="/impact/:id" element={<ImpactTrace />} />
+          <Route path="/scenarios" element={<ScenarioLab />} />
+          <Route path="/decisions" element={<DecisionCenter />} />
+          <Route path="/data/:type" element={<DataTable />} />
+        </Routes>
+      </main>
+    </div>
+  );
+}
+
+export default App;

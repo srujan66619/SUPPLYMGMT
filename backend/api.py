@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
+from typing import Optional
 from database import get_db
 import models
 
@@ -28,7 +29,7 @@ def create_disruption(disruption: DisruptionCreate, db: Session = Depends(get_db
         "status": db_disruption.status
     }
 
-from .ai_extractor import extract_disruption_info
+from ai_extractor import extract_disruption_info
 
 class AnalyzeRequest(BaseModel):
     notice: str

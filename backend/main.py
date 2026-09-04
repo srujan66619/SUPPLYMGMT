@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi import FastAPI, Depends, HTTPException, Request
-from pydantic import BaseModel
+from fastapi.responses import JSONResponse
+import time
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base, get_db
@@ -16,13 +17,22 @@ app = FastAPI(title="NEXUSFLOW AI API")
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    # Log the real exception for developers
     print(f"CRITICAL UNHANDLED ERROR: {exc}")
-    # Return a sanitized error state for the UI
     return JSONResponse(
         status_code=500,
         content={"detail": "ANALYSIS FAILED", "message": "An internal system error occurred. Please retry."}
     )
+
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    # Convert to milliseconds for clean logging
+    ms = round(process_time * 1000, 2)
+    response.headers["X-Process-Time"] = str(ms)
+    print(f"[PERF] {request.method} {request.url.path} executed in {ms}ms")
+    return response
 
 # Add CORS middleware
 app.add_middleware(
@@ -30,7 +40,8 @@ app.add_middleware(
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*", "X-Process-Time"],
+    expose_headers=["X-Process-Time"]
 )
 
 app.include_router(api.router)
