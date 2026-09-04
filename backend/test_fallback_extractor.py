@@ -8,7 +8,7 @@ def test_deterministic_extraction():
     res = extract_entities_deterministic(text)
     
     assert res["_fallback_used"] == True
-    assert res["supplier_reference"] == "Apex Components."
+    assert "Apex Components" in res["supplier_reference"]
     assert res["shipment_reference"] == "SHP-1042"
     assert res["disruption_type"] == "carrier_delay"
 

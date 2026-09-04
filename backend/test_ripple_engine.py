@@ -1,3 +1,4 @@
+import uuid
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -25,9 +26,9 @@ def db_session():
     session.add(inv)
     
     # Order A needs 100
-    oa = Order(customer_id=1, product_id=1, quantity=100, status="pending", promise_date=datetime.datetime.now())
+    oa = Order(id='ORD-' + str(uuid.uuid4())[:8], customer_id=1, product_id=1, quantity=100, status="pending", promise_date=datetime.datetime.now())
     # Order B needs 100
-    ob = Order(customer_id=2, product_id=1, quantity=100, status="pending", promise_date=datetime.datetime.now() + datetime.timedelta(days=2))
+    ob = Order(id='ORD-' + str(uuid.uuid4())[:8], customer_id=2, product_id=1, quantity=100, status="pending", promise_date=datetime.datetime.now() + datetime.timedelta(days=2))
     session.add_all([oa, ob])
     
     d = Disruption(source_text="T", extracted_entities={"Product": {"matched_record": {"id": 1, "name": "Prod"}}})

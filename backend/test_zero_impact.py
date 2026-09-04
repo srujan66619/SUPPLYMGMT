@@ -1,3 +1,4 @@
+import uuid
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -33,7 +34,7 @@ def test_zero_impact_known_supplier_no_pending_shipment(db_session):
 
 def test_zero_impact_known_product_no_open_orders(db_session):
     # Has shipment, but no open orders
-    ship = Shipment(product_id=1, warehouse_id=1, quantity=100, status="delayed")
+    ship = Shipment(id='SHP-' + str(uuid.uuid4())[:8], product_id=1, warehouse_id=1, quantity=100, status="delayed")
     d = Disruption(source_text="Test", extracted_entities={"Product": {"matched_record": {"id": 1, "name": "AX-500"}}})
     db_session.add_all([ship, d])
     db_session.commit()
@@ -44,7 +45,7 @@ def test_zero_impact_known_product_no_open_orders(db_session):
 
 def test_zero_impact_old_completed_shipment(db_session):
     # Shipment is received
-    ship = Shipment(product_id=1, warehouse_id=1, quantity=100, status="received")
+    ship = Shipment(id='SHP-' + str(uuid.uuid4())[:8], product_id=1, warehouse_id=1, quantity=100, status="received")
     # Even if there are open orders, if the shipment is received it shouldn't cause disruption?
     # Wait, the impact engine traces product, and just calculates available inventory. 
     # If there are open orders but NO SHORTAGE, it's ZERO impact.
@@ -53,7 +54,7 @@ def test_zero_impact_old_completed_shipment(db_session):
     db_session.add_all([ship, inv, c])
     db_session.commit()
     
-    o = Order(customer_id=c.id, product_id=1, quantity=100, status="pending", promise_date=datetime.datetime.now())
+    o = Order(id='ORD-' + str(uuid.uuid4())[:8], customer_id=c.id, product_id=1, quantity=100, status="pending", promise_date=datetime.datetime.now())
     d = Disruption(source_text="Test", extracted_entities={"Shipment": {"matched_record": {"id": f"SHP-{ship.id}"}}})
     db_session.add_all([o, d])
     db_session.commit()
@@ -67,7 +68,7 @@ def test_zero_impact_unrelated_inventory(db_session):
     db_session.add_all([inv, c])
     db_session.commit()
     
-    o = Order(customer_id=c.id, product_id=1, quantity=50, status="pending", promise_date=datetime.datetime.now())
+    o = Order(id='ORD-' + str(uuid.uuid4())[:8], customer_id=c.id, product_id=1, quantity=50, status="pending", promise_date=datetime.datetime.now())
     d = Disruption(source_text="Test", extracted_entities={"Supplier": {"matched_record": {"id": 1, "name": "Apex"}}})
     db_session.add_all([o, d])
     db_session.commit()

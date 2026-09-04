@@ -1,3 +1,4 @@
+import uuid
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -35,10 +36,10 @@ def db_session():
     
     now = datetime.datetime.now()
     # Order 1 wants 30. Available is 40. Fulfilled. Available becomes 10.
-    o1 = Order(customer_id=c1.id, product_id=p.id, quantity=30, status="pending", promise_date=now + datetime.timedelta(days=2))
+    o1 = Order(id='ORD-' + str(uuid.uuid4())[:8], customer_id=c1.id, product_id=p.id, quantity=30, status="pending", promise_date=now + datetime.timedelta(days=2))
     
     # Order 2 wants 20. Available is 10. Shortage of 10.
-    o2 = Order(customer_id=c2.id, product_id=p.id, quantity=20, status="pending", promise_date=now + datetime.timedelta(days=5))
+    o2 = Order(id='ORD-' + str(uuid.uuid4())[:8], customer_id=c2.id, product_id=p.id, quantity=20, status="pending", promise_date=now + datetime.timedelta(days=5))
     
     session.add_all([o1, o2])
     

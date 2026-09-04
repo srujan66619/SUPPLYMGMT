@@ -22,9 +22,16 @@ def calculate_impact(db, disruption_id: int) -> Dict[str, Any]:
     shipment = None
     
     if shipment_data:
-        # Extract int ID from SHP-1042
-        s_id = int(str(shipment_data['id']).replace('SHP-', ''))
+        s_id = shipment_data['id']
+        # Search by string instead of casting to int
         shipment = db.query(models.Shipment).filter(models.Shipment.id == s_id).first()
+        if not shipment:
+            # Fallback to try without SHP- if they stored it that way
+            s_id_clean = str(s_id).replace('SHP-', '')
+            shipment = db.query(models.Shipment).filter(models.Shipment.id == s_id_clean).first()
+            # Also try partial
+            if not shipment:
+                 shipment = db.query(models.Shipment).filter(models.Shipment.id.ilike(f"%{s_id_clean}%")).first()
         if shipment:
             products_to_trace.append(shipment.product_id)
             

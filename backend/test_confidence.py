@@ -1,3 +1,4 @@
+import uuid
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -23,10 +24,10 @@ def db_session():
     session.add(inv)
     
     # Fresh shipment and order
-    ship = Shipment(product_id=1, warehouse_id=1, quantity=100, status="in_transit", eta=datetime.datetime.now(), updated_at=datetime.datetime.now())
+    ship = Shipment(id='SHP-' + str(uuid.uuid4())[:8], product_id=1, warehouse_id=1, quantity=100, status="in_transit", eta=datetime.datetime.now(), updated_at=datetime.datetime.now())
     session.add(ship)
     
-    oa = Order(customer_id=1, product_id=1, quantity=100, status="pending", promise_date=datetime.datetime.now(), updated_at=datetime.datetime.now())
+    oa = Order(id='ORD-' + str(uuid.uuid4())[:8], customer_id=1, product_id=1, quantity=100, status="pending", promise_date=datetime.datetime.now(), updated_at=datetime.datetime.now())
     session.add(oa)
     
     d = Disruption(status="AMBIGUOUS", source_text="T", extracted_entities={"Product": {"matched_record": {"id": 1, "name": "Prod"}, "confidence": 0.8}})
