@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 import time
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
