@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Boolean, JSON
 from sqlalchemy.orm import relationship
-from .database import Base
+from database import Base
 import datetime
 
 class Supplier(Base):

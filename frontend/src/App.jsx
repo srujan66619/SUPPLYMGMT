@@ -1,6 +1,7 @@
 import React from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
 import Dashboard from './Dashboard'
+import DisruptionAnalyzer from './DisruptionAnalyzer'
 import { 
   LayoutDashboard, 
   AlertTriangle, 
@@ -14,20 +15,22 @@ import {
 } from 'lucide-react'
 
 function Sidebar() {
+  const location = useLocation();
+  
   const menuItems = [
-    { name: 'Control Tower', icon: LayoutDashboard, active: true },
-    { name: 'Disruptions', icon: AlertTriangle },
-    { name: 'Impact Map', icon: Map },
-    { name: 'Orders', icon: PackageSearch },
-    { name: 'Decision Center', icon: Scale },
-    { name: 'Scenario Lab', icon: FlaskConical },
+    { name: 'Control Tower', path: '/', icon: LayoutDashboard },
+    { name: 'Disruptions', path: '/disruptions/analyze', icon: AlertTriangle },
+    { name: 'Impact Map', path: '#', icon: Map },
+    { name: 'Orders', path: '#', icon: PackageSearch },
+    { name: 'Decision Center', path: '#', icon: Scale },
+    { name: 'Scenario Lab', path: '#', icon: FlaskConical },
   ]
   
   const dataItems = [
-    { name: 'Suppliers', icon: Users },
-    { name: 'Inventory', icon: Box },
-    { name: 'Shipments', icon: Truck },
-    { name: 'Customers', icon: Users },
+    { name: 'Suppliers', path: '#', icon: Users },
+    { name: 'Inventory', path: '#', icon: Box },
+    { name: 'Shipments', path: '#', icon: Truck },
+    { name: 'Customers', path: '#', icon: Users },
   ]
 
   return (
@@ -42,12 +45,15 @@ function Sidebar() {
           Operations
         </div>
         <nav className="space-y-1 px-2 mb-8">
-          {menuItems.map(item => (
-            <a key={item.name} href="#" className={`flex items-center px-3 py-2.5 rounded-md transition-colors ${item.active ? 'bg-indigo-600 text-white' : 'hover:bg-slate-800 hover:text-white'}`}>
-              <item.icon className="h-5 w-5 mr-3 flex-shrink-0" />
-              {item.name}
-            </a>
-          ))}
+          {menuItems.map(item => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link key={item.name} to={item.path} className={`flex items-center px-3 py-2.5 rounded-md transition-colors ${isActive ? 'bg-indigo-600 text-white' : 'hover:bg-slate-800 hover:text-white'}`}>
+                <item.icon className="h-5 w-5 mr-3 flex-shrink-0" />
+                {item.name}
+              </Link>
+            );
+          })}
         </nav>
         
         <div className="px-4 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -55,10 +61,10 @@ function Sidebar() {
         </div>
         <nav className="space-y-1 px-2">
           {dataItems.map(item => (
-            <a key={item.name} href="#" className="flex items-center px-3 py-2.5 rounded-md hover:bg-slate-800 hover:text-white transition-colors">
+            <Link key={item.name} to={item.path} className="flex items-center px-3 py-2.5 rounded-md hover:bg-slate-800 hover:text-white transition-colors">
               <item.icon className="h-5 w-5 mr-3 flex-shrink-0" />
               {item.name}
-            </a>
+            </Link>
           ))}
         </nav>
       </div>
@@ -74,6 +80,7 @@ function App() {
         <main className="flex-1 overflow-y-auto">
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/disruptions/analyze" element={<DisruptionAnalyzer />} />
           </Routes>
         </main>
       </div>

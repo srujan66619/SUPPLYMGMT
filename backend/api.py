@@ -1,9 +1,32 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from .database import get_db
-from . import models
+from pydantic import BaseModel, Field
+from database import get_db
+import models
 
 router = APIRouter(prefix="/api")
+
+class DisruptionCreate(BaseModel):
+    notice: str = Field(..., min_length=10, max_length=5000)
+
+@router.post("/disruptions")
+def create_disruption(disruption: DisruptionCreate, db: Session = Depends(get_db)):
+    if not disruption.notice or len(disruption.notice.strip()) < 10:
+        raise HTTPException(status_code=400, detail="Notice must contain valid text")
+        
+    db_disruption = models.Disruption(
+        source_text=disruption.notice,
+        status="pending_analysis"
+    )
+    db.add(db_disruption)
+    db.commit()
+    db.refresh(db_disruption)
+    
+    return {
+        "id": db_disruption.id,
+        "raw_notice": db_disruption.source_text,
+        "status": db_disruption.status
+    }
 
 @router.get("/health")
 def health_check():

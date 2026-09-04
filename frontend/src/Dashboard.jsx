@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { 
   AlertTriangle, 
   PackageSearch, 
@@ -12,6 +13,7 @@ import {
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     axios.get('http://localhost:8000/api/dashboard')
@@ -36,7 +38,10 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Control Tower</h1>
           <p className="text-slate-500 mt-1">Real-time supply chain overview and disruption monitoring.</p>
         </div>
-        <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-medium shadow-sm transition-colors flex items-center gap-2">
+        <button 
+          onClick={() => navigate('/disruptions/analyze')}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-medium shadow-sm transition-colors flex items-center gap-2"
+        >
           <Activity className="h-4 w-4" />
           ANALYZE DISRUPTION
         </button>
