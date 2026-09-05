@@ -4,3 +4,5 @@ pydantic
 sqlalchemy
 python-dotenv
 google-genai
+thefuzz
+python-Levenshtein
