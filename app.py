@@ -24,6 +24,18 @@ FRONTEND_DIR = os.path.join(BASE_DIR, "frontend", "dist")
 # ── Create all DB tables ──────────────────────────────────────────────
 Base.metadata.create_all(bind=engine)
 
+# Auto-seed the database if empty (for zero-config evaluator testing)
+from backend.database import SessionLocal
+from backend.seed_data import seed_db
+
+db = SessionLocal()
+try:
+    if db.query(models.Product).first() is None:
+        print("Database is empty. Auto-seeding sample data for evaluators...")
+        seed_db()
+finally:
+    db.close()
+
 # ── FastAPI App ───────────────────────────────────────────────────────
 app = FastAPI(title="NEXUSFLOW AI API")
 
