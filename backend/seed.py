@@ -1,5 +1,5 @@
-from database import engine, SessionLocal, Base
-from models import Supplier, Product, Warehouse, Inventory, Customer, Order
+from backend.database import engine, SessionLocal, Base
+from backend.models import Supplier, Product, Warehouse, Inventory, Customer, Order
 import datetime
 
 def seed_db():

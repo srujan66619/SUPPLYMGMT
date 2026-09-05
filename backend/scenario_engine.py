@@ -1,6 +1,6 @@
 import datetime
-import models
-from impact_engine import calculate_impact
+from backend import models
+from backend.impact_engine import calculate_impact
 
 def simulate_scenario(db, disruption_id: int, scenario: str, order_id: int = None):
     # Base impact analysis
@@ -27,14 +27,14 @@ def simulate_scenario(db, disruption_id: int, scenario: str, order_id: int = Non
     STANDARD_SHIPPING_COST = 5.0
     
     result = {
-        "option": scenario,
+        "name": scenario,
         "cost": 0,
         "units_fulfilled": 0,
         "units_remaining": 0,
         "orders_protected": 0,
-        "customer_impact": "None",
+        "customer_impact": "low",
         "projected_delay": 0,
-        "secondary_impact": "None",
+        "secondary_risk": "low",
         "risk_level": "Low"
     }
     
@@ -44,9 +44,9 @@ def simulate_scenario(db, disruption_id: int, scenario: str, order_id: int = Non
         result["units_fulfilled"] = total_required
         result["units_remaining"] = 0
         result["orders_protected"] = len(affected_orders)
-        result["customer_impact"] = "High Satisfaction (On Time)"
+        result["customer_impact"] = "low"
         result["projected_delay"] = 1 # Accelerated from max_delay
-        result["secondary_impact"] = "Low (Capital Expenditure)"
+        result["secondary_risk"] = "low"
         result["risk_level"] = "Low"
         
     elif scenario == "PART-SHIP":
@@ -57,9 +57,9 @@ def simulate_scenario(db, disruption_id: int, scenario: str, order_id: int = Non
         result["units_fulfilled"] = units_available
         result["units_remaining"] = total_shortage
         result["orders_protected"] = 0 # No order is FULLY protected, but partially.
-        result["customer_impact"] = "Moderate (Partial Delivery)"
+        result["customer_impact"] = "medium"
         result["projected_delay"] = max_delay
-        result["secondary_impact"] = "None"
+        result["secondary_risk"] = "low"
         result["risk_level"] = "Medium"
         
     elif scenario == "REALLOCATE":
@@ -68,22 +68,20 @@ def simulate_scenario(db, disruption_id: int, scenario: str, order_id: int = Non
         result["units_fulfilled"] = total_required
         result["units_remaining"] = 0
         result["orders_protected"] = len(affected_orders)
-        result["customer_impact"] = "Protected"
+        result["customer_impact"] = "low"
         result["projected_delay"] = 0
-        result["secondary_impact"] = "Critical"
+        result["secondary_risk"] = "high"
         result["risk_level"] = "High"
         
         if order_id:
-            from ripple_engine import calculate_ripple_effects
+            from backend.ripple_engine import calculate_ripple_effects
             ripple = calculate_ripple_effects(db, disruption_id, order_id)
             if ripple:
                 result["ripple"] = ripple
                 if ripple["ripple_effect_detected"]:
-                    exposed = ripple["newly_exposed_orders"]
-                    exp_names = ", ".join([f"{e['order_id']} ({e['customer']})" for e in exposed])
-                    result["secondary_impact"] = f"RIPPLE EFFECT DETECTED: Protecting ORD-{order_id} causes {exp_names} to become at risk."
+                    result["secondary_risk"] = "high"
                 else:
-                    result["secondary_impact"] = "No significant ripple effects."
+                    result["secondary_risk"] = "low"
         
     elif scenario == "INFORM":
         # Do nothing, accept delay.
@@ -91,9 +89,9 @@ def simulate_scenario(db, disruption_id: int, scenario: str, order_id: int = Non
         result["units_fulfilled"] = total_required - total_shortage
         result["units_remaining"] = total_shortage
         result["orders_protected"] = 0
-        result["customer_impact"] = "High Dissatisfaction"
+        result["customer_impact"] = "high"
         result["projected_delay"] = max_delay
-        result["secondary_impact"] = "Reputational Damage"
+        result["secondary_risk"] = "high"
         result["risk_level"] = "Critical"
         
     else:

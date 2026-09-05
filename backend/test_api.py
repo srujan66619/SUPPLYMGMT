@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
-from main import app
-from database import Base, engine
+from backend.main import app
+from backend.database import Base, engine
 
 # Re-create tables for testing if necessary
 Base.metadata.create_all(bind=engine)

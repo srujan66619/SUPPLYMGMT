@@ -3,8 +3,8 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import datetime
-from models import Base, Supplier, Product, Warehouse, Inventory, Shipment, Customer, Order, Disruption
-from confidence import calculate_system_confidence
+from backend.models import Base, Supplier, Product, Warehouse, Inventory, Shipment, Customer, Order, Disruption
+from backend.confidence import calculate_system_confidence
 
 @pytest.fixture
 def db_session():

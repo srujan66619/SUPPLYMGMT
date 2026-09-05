@@ -1,4 +1,4 @@
-from scenario_engine import simulate_scenario
+from backend.scenario_engine import simulate_scenario
 
 def generate_recommendation(db, disruption_id: int):
     scenarios = ["EXPEDITE", "PART-SHIP", "REALLOCATE", "INFORM"]
@@ -27,13 +27,13 @@ def generate_recommendation(db, disruption_id: int):
         total_affected = max(1, r["orders_protected"] + (r["units_remaining"] > 0)) # roughly
         # Let's use the raw numbers:
         # If Expedite protects all, it gets max points.
-        if r["option"] == "EXPEDITE":
+        if r["name"] == "EXPEDITE":
             score += 40
-        elif r["option"] == "PART-SHIP":
+        elif r["name"] == "PART-SHIP":
             score += 20
-        elif r["option"] == "REALLOCATE":
+        elif r["name"] == "REALLOCATE":
             score += 10 # Only protects some
-        elif r["option"] == "INFORM":
+        elif r["name"] == "INFORM":
             score += 0
             
         # 2. Cost Efficiency (0-20 points)
@@ -59,34 +59,34 @@ def generate_recommendation(db, disruption_id: int):
         elif r["projected_delay"] <= 7:
             score += 5
             
-        r["tradeoff_score"] = min(100, max(0, score))
+        r["score"] = min(100, max(0, score)) / 100.0
         scored_results.append(r)
         
-    scored_results.sort(key=lambda x: x["tradeoff_score"], reverse=True)
+    scored_results.sort(key=lambda x: x["score"], reverse=True)
     
     top_choice = scored_results[0]
     alternatives = scored_results[1:]
     
     # Generate explanations
     why_this_option = []
-    if top_choice["option"] == "EXPEDITE":
+    if top_choice["name"] == "EXPEDITE":
         why_this_option = [
             "Provides maximum protection for affected orders.",
             "Keeps secondary risk low (no ripple effects).",
             "Maintains high customer satisfaction despite upfront capital cost."
         ]
-    elif top_choice["option"] == "PART-SHIP":
+    elif top_choice["name"] == "PART-SHIP":
         why_this_option = [
             "Balances immediate partial fulfillment without excessive premium costs.",
             "Avoids stealing inventory from other critical orders.",
             "Maintains moderate customer trust while awaiting replenishment."
         ]
-    elif top_choice["option"] == "REALLOCATE":
+    elif top_choice["name"] == "REALLOCATE":
         why_this_option = [
             "Zero direct cost solution to save critical orders.",
             "Acceptable secondary impact given the priority of the target orders."
         ]
-    elif top_choice["option"] == "INFORM":
+    elif top_choice["name"] == "INFORM":
         why_this_option = [
             "Zero cost incurred.",
             "Other options are either too expensive or too risky."
@@ -94,21 +94,21 @@ def generate_recommendation(db, disruption_id: int):
         
     why_not_alternatives = []
     for alt in alternatives:
-        if alt["option"] == "EXPEDITE":
+        if alt["name"] == "EXPEDITE":
             why_not_alternatives.append(f"EXPEDITE was rejected due to disproportionately high cost (${alt['cost']}).")
-        elif alt["option"] == "REALLOCATE":
+        elif alt["name"] == "REALLOCATE":
             why_not_alternatives.append("REALLOCATE was rejected due to critical secondary ripple effects on other customers.")
-        elif alt["option"] == "PART-SHIP":
+        elif alt["name"] == "PART-SHIP":
             why_not_alternatives.append("PART-SHIP leaves too many residual units unresolved.")
-        elif alt["option"] == "INFORM":
+        elif alt["name"] == "INFORM":
             why_not_alternatives.append("INFORM CUSTOMER (Do nothing) causes unacceptable reputational damage.")
             
     return {
-        "recommended_action": top_choice["option"],
-        "tradeoff_score": top_choice["tradeoff_score"],
-        "metrics": top_choice,
-        "alternatives": alternatives,
-        "why_this_option": why_this_option,
-        "why_not_alternatives": why_not_alternatives,
+        "recommendation": top_choice["name"],
+        "explanation": {
+            "why": " ".join(why_this_option),
+            "why_not": " ".join(why_not_alternatives)
+        },
+        "scenarios": scored_results,
         "confidence": "High (Deterministic Computation)"
     }

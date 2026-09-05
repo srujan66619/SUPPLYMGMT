@@ -3,8 +3,8 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import datetime
-from models import Base, Supplier, Product, Warehouse, Inventory, Shipment, Customer, Order, Disruption
-from ripple_engine import calculate_ripple_effects
+from backend.models import Base, Supplier, Product, Warehouse, Inventory, Shipment, Customer, Order, Disruption
+from backend.ripple_engine import calculate_ripple_effects
 
 @pytest.fixture
 def db_session():

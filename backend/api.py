@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import Optional
-from database import get_db
-import models
+from backend.database import get_db
+from backend import models
 
 router = APIRouter(prefix="/api")
 
@@ -29,7 +29,7 @@ def create_disruption(disruption: DisruptionCreate, db: Session = Depends(get_db
         "status": db_disruption.status
     }
 
-from ai_extractor import extract_disruption_info
+from backend.ai_extractor import extract_disruption_info
 
 class AnalyzeRequest(BaseModel):
     notice: str
@@ -47,7 +47,7 @@ class SimulateRequest(BaseModel):
     scenario: str
     order_id: Optional[int] = None
 
-from scenario_engine import simulate_scenario
+from backend.scenario_engine import simulate_scenario
 
 @router.post("/simulate")
 def simulate_disruption(req: SimulateRequest, db: Session = Depends(get_db)):
@@ -56,7 +56,7 @@ def simulate_disruption(req: SimulateRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=result["error"])
     return result
 
-from resolver import resolve_entities
+from backend.resolver import resolve_entities
 
 @router.post("/disruptions/{disruption_id}/verify")
 def verify_disruption_entities(disruption_id: int, req: VerifyRequest, db: Session = Depends(get_db)):
@@ -73,7 +73,7 @@ def confirm_disruption_entities(disruption_id: int, req: VerifyRequest, db: Sess
     db.commit()
     return {"status": "success", "id": disruption.id}
 
-from impact_engine import calculate_impact
+from backend.impact_engine import calculate_impact
 
 @router.get("/impact/{disruption_id}")
 def get_disruption_impact(disruption_id: int, db: Session = Depends(get_db)):
@@ -89,7 +89,7 @@ def get_affected_orders(disruption_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=result["error"])
     return result.get("affected_orders", [])
 
-from recommendation import generate_recommendation
+from backend.recommendation import generate_recommendation
 
 @router.get("/disruptions/{disruption_id}/recommendation")
 def get_recommendation(disruption_id: int, db: Session = Depends(get_db)):
@@ -98,7 +98,7 @@ def get_recommendation(disruption_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=result["error"])
     return result
 
-from evidence import generate_evidence_for_disruption
+from backend.evidence import generate_evidence_for_disruption
 
 @router.get("/impact/{disruption_id}/evidence")
 def get_evidence(disruption_id: int, db: Session = Depends(get_db)):
@@ -107,7 +107,7 @@ def get_evidence(disruption_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=result["error"])
     return result
 
-from confidence import calculate_system_confidence
+from backend.confidence import calculate_system_confidence
 
 @router.get("/impact/{disruption_id}/confidence")
 def get_confidence(disruption_id: int, db: Session = Depends(get_db)):
@@ -155,12 +155,22 @@ def dashboard(db: Session = Depends(get_db)):
     critical_orders = db.query(models.Order).join(models.Customer).filter(models.Customer.priority_level == 1).count()
     customers_exposed = db.query(models.Customer).count()
     
+    recent_disruptions_query = db.query(models.Disruption).order_by(models.Disruption.created_at.desc()).limit(5).all()
+    recent_disruptions = [
+        {
+            "id": f"DIS-{d.id:03d}",
+            "event": d.source_text[:50] + "..." if len(d.source_text) > 50 else d.source_text,
+            "status": d.status,
+            "raw_id": d.id
+        } for d in recent_disruptions_query
+    ]
+    
     return {
         "active_disruptions": active_disruptions,
         "at_risk_orders": at_risk_orders,
         "critical_orders": critical_orders,
         "customers_exposed": customers_exposed,
-        "recent_disruptions": [],
+        "recent_disruptions": recent_disruptions,
         "supply_chain_overview": {
             "total_suppliers": db.query(models.Supplier).count(),
             "total_products": db.query(models.Product).count()
@@ -169,16 +179,78 @@ def dashboard(db: Session = Depends(get_db)):
 
 @router.get("/orders")
 def get_orders(db: Session = Depends(get_db)):
-    return db.query(models.Order).limit(50).all()
+    orders = db.query(models.Order).limit(50).all()
+    result = []
+    for o in orders:
+        result.append({
+            "id": o.id,
+            "customer_name": o.customer.name if o.customer else "Unknown",
+            "product_name": o.product.name if o.product else "Unknown",
+            "quantity": o.quantity,
+            "status": o.status,
+            "promise_date": o.promise_date.isoformat() if o.promise_date else None,
+            "priority": o.customer.priority_level if o.customer else 3
+        })
+    return result
 
 @router.get("/suppliers")
 def get_suppliers(db: Session = Depends(get_db)):
-    return db.query(models.Supplier).limit(50).all()
+    suppliers = db.query(models.Supplier).limit(50).all()
+    result = []
+    for s in suppliers:
+        result.append({
+            "id": s.id,
+            "name": s.name,
+            "location": "Global", # Add mock location if not in model, or use another field
+            "contact_email": s.contact_email,
+            "status": "Active"
+        })
+    return result
 
 @router.get("/inventory")
 def get_inventory(db: Session = Depends(get_db)):
-    return db.query(models.Inventory).limit(50).all()
+    inventory = db.query(models.Inventory).limit(50).all()
+    result = []
+    for i in inventory:
+        on_hand = i.stock_level
+        reserved = i.reserved_quantity
+        available = on_hand - reserved
+        result.append({
+            "id": i.id,
+            "warehouse_name": i.warehouse.name if i.warehouse else "Unknown",
+            "product_name": i.product.name if i.product else "Unknown",
+            "on_hand": on_hand,
+            "reserved": reserved,
+            "available": available,
+            "last_updated": i.updated_at.isoformat() if i.updated_at else None
+        })
+    return result
 
 @router.get("/shipments")
 def get_shipments(db: Session = Depends(get_db)):
-    return db.query(models.Shipment).limit(50).all()
+    shipments = db.query(models.Shipment).limit(50).all()
+    result = []
+    for s in shipments:
+        result.append({
+            "id": s.id,
+            "product_name": s.product.name if s.product else "Unknown",
+            "warehouse_name": s.warehouse.name if s.warehouse else "Unknown",
+            "quantity": s.quantity,
+            "status": s.status,
+            "current_eta": s.eta.isoformat() if s.eta else None,
+            "carrier": "Standard Carrier" # Placeholder if not in model
+        })
+    return result
+
+@router.get("/customers")
+def get_customers(db: Session = Depends(get_db)):
+    customers = db.query(models.Customer).limit(50).all()
+    result = []
+    for c in customers:
+        result.append({
+            "id": c.id,
+            "name": c.name,
+            "priority_level": c.priority_level,
+            "status": "Active"
+        })
+    return result

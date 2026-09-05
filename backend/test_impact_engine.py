@@ -3,8 +3,8 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import datetime
-from models import Base, Supplier, Product, Warehouse, Inventory, Shipment, Customer, Order, Disruption
-from impact_engine import calculate_impact
+from backend.models import Base, Supplier, Product, Warehouse, Inventory, Shipment, Customer, Order, Disruption
+from backend.impact_engine import calculate_impact
 
 @pytest.fixture
 def db_session():

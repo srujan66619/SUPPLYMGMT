@@ -1,11 +1,60 @@
 @import "tailwindcss";
 
+@theme {
+  --color-navy-base: #0A0E18;
+  --color-navy-surface: #0F131D;
+  --color-navy-elevated: #1E293B;
+  --color-foreground: #F8FAFC;
+  --color-slate-muted: #94A3B8;
+  --color-accent-crimson: #EF4444;
+  --color-accent-amber: #F59E0B;
+  --color-accent-emerald: #10B981;
+  --color-accent-indigo: #4F46E5;
+  --color-accent-indigo-light: #818CF8;
+}
+
 @layer base {
   body {
-    background-color: var(--color-slate-50);
-    color: var(--color-slate-900);
+    background-color: var(--color-navy-base);
+    color: var(--color-foreground);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  }
+}
+
+.dynamic-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle at 50% 50%, rgba(79, 70, 229, 0.05) 0%, transparent 50%),
+                    linear-gradient(to right, rgba(15, 19, 29, 0.8), rgba(10, 14, 24, 0.8));
+}
+
+.network-layer {
+  position: absolute;
+  inset: 0;
+  opacity: 0.15;
+  background-image: 
+    linear-gradient(rgba(148, 163, 184, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.1) 1px, transparent 1px);
+  background-size: 40px 40px;
+  transform: perspective(500px) rotateX(60deg) scale(2);
+  transform-origin: top center;
+  animation: pulse-grid 10s infinite alternate linear;
+}
+
+@keyframes pulse-grid {
+  0% { transform: perspective(500px) rotateX(60deg) scale(2) translateY(0); }
+  100% { transform: perspective(500px) rotateX(60deg) scale(2) translateY(40px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .network-layer {
+    animation: none;
   }
 }

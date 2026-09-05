@@ -16,10 +16,15 @@ def extract_entities_deterministic(text: str) -> dict:
         "_fallback_used": True
     }
     
-    # Simple regex patterns
-    supplier_match = re.search(r'(?i)supplier:\s*([a-zA-Z\s]+)', text)
+    # Supplier extraction
+    supplier_match = re.search(r'(?i)supplier:\s*([a-zA-Z0-9\s]+)', text)
     if supplier_match:
         result["supplier_reference"] = supplier_match.group(1).strip()
+    else:
+        # Fallback for the test notice format
+        shutdown_match = re.search(r'(?i)at ([A-Z][a-zA-Z\s]+(?:Components|Ltd|Inc|Corp))', text)
+        if shutdown_match:
+            result["supplier_reference"] = shutdown_match.group(1).strip()
         
     product_match = re.search(r'(?i)(?:SKU|Product|Component):\s*([A-Z0-9-]+)', text)
     if product_match:
@@ -45,11 +50,19 @@ def extract_entities_deterministic(text: str) -> dict:
         except ValueError:
             pass
             
+    # ETA extraction
+    eta_matches = re.findall(r'(?i)(?:on|arrive)\s*([A-Z][a-z]+\s+\d{1,2})', text)
+    if len(eta_matches) >= 2:
+        result["original_eta"] = eta_matches[0]
+        result["revised_eta"] = eta_matches[1]
+    elif len(eta_matches) == 1:
+        result["original_eta"] = eta_matches[0]
+
     if "delay" in text.lower():
         result["disruption_type"] = "carrier_delay"
     elif "incident" in text.lower() or "fire" in text.lower():
         result["disruption_type"] = "warehouse_incident"
-    elif "halt" in text.lower() or "production" in text.lower():
+    elif "halt" in text.lower() or "production" in text.lower() or "shutdown" in text.lower():
         result["disruption_type"] = "supplier_production_halt"
         
     return result

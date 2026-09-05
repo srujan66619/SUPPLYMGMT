@@ -1,5 +1,5 @@
 import pytest
-from resolver import fuzzy_match, parse_shipment_id
+from backend.resolver import fuzzy_match, parse_shipment_id
 
 def test_exact_match():
     candidates = {1: ["Apex Components Ltd.", "apex"]}

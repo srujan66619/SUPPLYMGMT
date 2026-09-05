@@ -3,8 +3,8 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import datetime
-from models import Base, Supplier, Product, Warehouse, Inventory, Shipment, Customer, Order, Disruption
-from scenario_engine import simulate_scenario
+from backend.models import Base, Supplier, Product, Warehouse, Inventory, Shipment, Customer, Order, Disruption
+from backend.scenario_engine import simulate_scenario
 
 @pytest.fixture
 def db_session():

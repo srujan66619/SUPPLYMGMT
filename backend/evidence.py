@@ -1,4 +1,4 @@
-import models
+from backend import models
 import datetime
 
 def generate_evidence_for_disruption(db, disruption_id: int):
@@ -32,7 +32,28 @@ def generate_evidence_for_disruption(db, disruption_id: int):
     if not products_to_trace:
         return {"error": "Could not determine affected products"}
         
-    delay_days_incurred = 10
+    revised_eta_str = entities.get('revised_eta')
+    original_eta_str = entities.get('original_eta')
+    
+    delay_days_incurred = 10 
+    
+    if revised_eta_str and original_eta_str:
+        try:
+            rev_date = datetime.datetime.strptime(revised_eta_str, "%Y-%m-%d")
+            orig_date = datetime.datetime.strptime(original_eta_str, "%Y-%m-%d")
+            calc_delay = (rev_date - orig_date).days
+            if calc_delay > 0:
+                delay_days_incurred = calc_delay
+        except ValueError:
+            pass
+    elif revised_eta_str:
+        try:
+            rev_date = datetime.datetime.strptime(revised_eta_str, "%Y-%m-%d")
+            calc_delay = (rev_date - datetime.datetime.now()).days
+            if calc_delay > 0:
+                delay_days_incurred = calc_delay
+        except ValueError:
+            pass
     
     # We clear old evidence for this disruption to regenerate
     db.query(models.Evidence).filter(models.Evidence.disruption_id == disruption_id).delete()

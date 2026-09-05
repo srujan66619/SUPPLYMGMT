@@ -3,8 +3,8 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import datetime
-from models import Base, Supplier, Product, Warehouse, Inventory, Shipment, Customer, Order, Disruption
-from recommendation import generate_recommendation
+from backend.models import Base, Supplier, Product, Warehouse, Inventory, Shipment, Customer, Order, Disruption
+from backend.recommendation import generate_recommendation
 
 @pytest.fixture
 def db_session():

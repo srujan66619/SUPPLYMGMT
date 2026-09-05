@@ -1,7 +1,7 @@
 import random
 import datetime
-from database import engine, SessionLocal, Base
-from models import Supplier, Product, Warehouse, Inventory, Shipment, Customer, Order
+from backend.database import engine, SessionLocal, Base
+from backend.models import Supplier, Product, Warehouse, Inventory, Shipment, Customer, Order
 
 def seed_db():
     Base.metadata.drop_all(bind=engine)

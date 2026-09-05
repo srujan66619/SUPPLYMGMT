@@ -5,11 +5,11 @@ from pydantic import BaseModel
 import time
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
-from database import engine, Base, get_db
+from backend.database import engine, Base, get_db
 from fastapi.responses import JSONResponse
-import models
-import api
-from ai_engine import analyze_disruption_notice, ExtractedEntities
+from backend import models
+from backend import api
+from backend.ai_engine import analyze_disruption_notice, ExtractedEntities
 
 # Create all tables
 Base.metadata.create_all(bind=engine)
@@ -50,9 +50,7 @@ app.include_router(api.router)
 class NoticeRequest(BaseModel):
     text: str
 
-@app.get("/")
-def read_root():
-    return {"message": "NEXUSFLOW AI Backend is running"}
+
 
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)):
@@ -65,3 +63,22 @@ def analyze_notice(request: NoticeRequest):
         return extracted
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+import os
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+frontend_dist = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist')
+if os.path.isdir(frontend_dist):
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
+    
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not Found")
+        
+        filepath = os.path.join(frontend_dist, full_path)
+        if os.path.isfile(filepath):
+            return FileResponse(filepath)
+            
+        return FileResponse(os.path.join(frontend_dist, "index.html"))

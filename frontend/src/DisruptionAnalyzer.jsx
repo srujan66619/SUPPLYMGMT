@@ -7,6 +7,7 @@ export default function DisruptionAnalyzer() {
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState(null);
+  const [disruptionId, setDisruptionId] = useState(null);
   const [verification, setVerification] = useState(null);
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState('');
@@ -26,7 +27,10 @@ export default function DisruptionAnalyzer() {
     setAnalysis(null);
     setVerification(null);
     try {
-      const res = await axios.post('/api/extract', { text: cleanNotice });
+      const createRes = await axios.post('/api/disruptions', { notice: cleanNotice });
+      setDisruptionId(createRes.data.id);
+      
+      const res = await axios.post('/api/disruptions/analyze', { notice: cleanNotice });
       setAnalysis(res.data);
     } catch (err) {
       setError(err.response?.data?.detail || 'ANALYSIS FAILED');
@@ -55,14 +59,14 @@ export default function DisruptionAnalyzer() {
   ];
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
+    <div className="p-8 max-w-5xl mx-auto relative z-10">
       <div className="mb-8 flex justify-between items-end">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <SearchCode className="h-6 w-6 text-indigo-600" />
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <SearchCode className="h-6 w-6 text-accent-indigo-light" />
             Disruption Analyzer
           </h1>
-          <p className="text-sm text-slate-500 mt-1">Parse unstructured notices and map them to operational data.</p>
+          <p className="text-sm text-slate-muted mt-1">Parse unstructured notices and map them to operational data.</p>
         </div>
         
         <div className="flex gap-2">
@@ -70,7 +74,7 @@ export default function DisruptionAnalyzer() {
             <button
               key={idx}
               onClick={() => setNotice(s.text)}
-              className="text-[10px] uppercase tracking-wider font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-indigo-600 px-3 py-1.5 rounded-md transition-colors shadow-sm"
+              className="text-[10px] uppercase tracking-wider font-bold bg-navy-surface border border-navy-elevated text-slate-muted hover:bg-navy-elevated hover:text-accent-indigo-light px-3 py-1.5 rounded-md transition-colors shadow-sm"
             >
               {s.label}
             </button>
@@ -78,16 +82,16 @@ export default function DisruptionAnalyzer() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+      <div className="bg-navy-surface rounded-xl shadow-lg border border-navy-elevated p-6 mb-8">
         <textarea
           value={notice}
           onChange={(e) => setNotice(e.target.value)}
           placeholder="Paste supplier notice, email, or alert text here..."
-          className="w-full h-40 border border-slate-300 rounded-lg p-4 text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm leading-relaxed"
+          className="w-full h-40 bg-navy-base border border-navy-elevated rounded-lg p-4 text-foreground focus:ring-2 focus:ring-accent-indigo focus:border-accent-indigo font-mono text-sm leading-relaxed"
         />
         <div className="mt-4 flex justify-between items-center">
           {error && (
-            <div className="text-red-600 bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 text-sm font-bold flex items-center gap-2">
+            <div className="text-accent-crimson bg-accent-crimson/10 px-3 py-1.5 rounded-lg border border-accent-crimson/20 text-sm font-bold flex items-center gap-2">
               <AlertCircle className="h-4 w-4" />
               {error} - PLEASE RETRY
             </div>
@@ -96,7 +100,7 @@ export default function DisruptionAnalyzer() {
           <button
             onClick={handleAnalyze}
             disabled={loading || !notice.trim()}
-            className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-medium py-2.5 px-6 rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+            className="bg-accent-indigo hover:bg-accent-indigo-light disabled:bg-accent-indigo/50 text-foreground font-medium py-2.5 px-6 rounded-lg transition-colors flex items-center gap-2 shadow-sm"
           >
             {loading ? 'ANALYZING...' : 'ANALYZE NOTICE'}
             {!loading && <ArrowRight className="h-4 w-4" />}
@@ -106,14 +110,14 @@ export default function DisruptionAnalyzer() {
       </div>
 
       {analysis && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
-          <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex justify-between items-center">
-            <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2 uppercase tracking-wider">
-              <Database className="h-4 w-4 text-indigo-600" />
+        <div className="bg-navy-surface rounded-xl shadow-lg border border-navy-elevated overflow-hidden mb-8">
+          <div className="bg-navy-base border-b border-navy-elevated px-6 py-4 flex justify-between items-center">
+            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2 uppercase tracking-wider">
+              <Database className="h-4 w-4 text-accent-indigo-light" />
               Entity Extraction & Resolution
             </h2>
             {analysis._fallback_used && (
-              <div className="flex items-center gap-2 bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-xs font-bold">
+              <div className="flex items-center gap-2 bg-accent-amber/10 text-accent-amber border border-accent-amber/20 px-3 py-1 rounded-full text-xs font-bold">
                 <AlertCircle className="h-3 w-3" />
                 AI unavailable. Using deterministic extraction.
               </div>
@@ -123,7 +127,7 @@ export default function DisruptionAnalyzer() {
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Left side: AI Extraction */}
             <div>
-              <h3 className="font-semibold text-slate-800 text-xs uppercase tracking-wider border-b border-slate-100 pb-2 mb-4">Raw Extracted Parameters</h3>
+              <h3 className="font-semibold text-foreground text-xs uppercase tracking-wider border-b border-navy-elevated pb-2 mb-4">Raw Extracted Parameters</h3>
               <div className="space-y-3">
                 <DataRow label="Disruption Type" value={analysis.disruption_type} />
                 <DataRow label="Supplier Ref" value={analysis.supplier_reference} />
@@ -138,15 +142,16 @@ export default function DisruptionAnalyzer() {
 
             {/* Right side: Database Resolution */}
             <div>
-              <div className="flex justify-between items-center border-b border-slate-100 pb-2 mb-4">
-                <h3 className="font-semibold text-slate-800 text-xs uppercase tracking-wider">Database Verification</h3>
+              <div className="flex justify-between items-center border-b border-navy-elevated pb-2 mb-4">
+                <h3 className="font-semibold text-foreground text-xs uppercase tracking-wider">Database Verification</h3>
                 {!verifying && !verification && (
                   <button
                     onClick={async () => {
                       setVerifying(true);
                       try {
-                        const res = await axios.post('/api/resolve', analysis);
-                        setVerification(res.data);
+                        const verifyRes = await axios.post(`/api/disruptions/${disruptionId}/verify`, { extracted_data: analysis });
+                        await axios.post(`/api/disruptions/${disruptionId}/confirm`, { extracted_data: { ...analysis, ...verifyRes.data } });
+                        setVerification({ ...verifyRes.data, disruption_id: disruptionId });
                       } catch (err) {
                         console.error(err);
                         setVerification({ error: "ANALYSIS FAILED" });
@@ -154,26 +159,26 @@ export default function DisruptionAnalyzer() {
                         setVerifying(false);
                       }
                     }}
-                    className="text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-3 py-1 rounded font-semibold border border-indigo-200 transition-colors"
+                    className="text-xs bg-accent-indigo/10 text-accent-indigo-light hover:bg-accent-indigo/20 px-3 py-1 rounded font-semibold border border-accent-indigo/20 transition-colors"
                   >
                     RUN RESOLVER
                   </button>
                 )}
-                {verifying && <span className="text-xs text-indigo-600 font-semibold animate-pulse">VERIFYING...</span>}
+                {verifying && <span className="text-xs text-accent-indigo-light font-semibold animate-pulse">VERIFYING...</span>}
               </div>
 
               {verification ? (
                 <div className="space-y-4">
-                  <VerificationRow label="Supplier" entity={verification.supplier} />
-                  <VerificationRow label="Product" entity={verification.product} />
-                  <VerificationRow label="Shipment" entity={verification.shipment} />
-                  <VerificationRow label="Warehouse" entity={verification.warehouse} />
+                  <VerificationRow label="Supplier" entity={verification.Supplier} />
+                  <VerificationRow label="Product" entity={verification.Product} />
+                  <VerificationRow label="Shipment" entity={verification.Shipment} />
+                  <VerificationRow label="Warehouse" entity={verification.Warehouse} />
                   
                   {verification.disruption_id && (
                     <div className="mt-8">
                       <button
                         onClick={() => navigate(`/impact/${verification.disruption_id}`)}
-                        className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm"
+                        className="w-full bg-accent-indigo hover:bg-accent-indigo-light text-foreground font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm"
                       >
                         VIEW IMPACT TRACE
                         <ArrowRight className="h-4 w-4" />
@@ -182,7 +187,7 @@ export default function DisruptionAnalyzer() {
                   )}
                 </div>
               ) : (
-                <div className="h-40 flex items-center justify-center text-slate-400 text-sm bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                <div className="h-40 flex items-center justify-center text-slate-muted text-sm bg-navy-base rounded-lg border border-dashed border-navy-elevated">
                   Run resolver to map entities to operational DB.
                 </div>
               )}
@@ -197,33 +202,33 @@ export default function DisruptionAnalyzer() {
 const DataRow = ({ label, value }) => {
   if (!value) return null;
   return (
-    <div className="flex justify-between text-sm py-1 border-b border-slate-50 last:border-0">
-      <span className="text-slate-500">{label}</span>
-      <span className="font-mono font-medium text-slate-800">{value}</span>
+    <div className="flex justify-between text-sm py-1 border-b border-navy-elevated last:border-0">
+      <span className="text-slate-muted">{label}</span>
+      <span className="font-mono font-medium text-foreground">{value}</span>
     </div>
   );
 };
 
 const VerificationRow = ({ label, entity }) => {
   if (!entity) return null;
-  const isResolved = entity.resolved;
+  const isResolved = entity.status === 'VERIFIED';
   
   // Custom badges for PS08 states
   let badgeText = "NOT FOUND";
-  let badgeStyle = "text-red-700 bg-red-100/50";
-  let containerStyle = "bg-red-50 border-red-100";
-  let icon = <XCircle className="h-4 w-4 text-red-500" />;
+  let badgeStyle = "text-accent-crimson bg-accent-crimson/10 border-accent-crimson/20";
+  let containerStyle = "bg-navy-base border-accent-crimson/30";
+  let icon = <XCircle className="h-4 w-4 text-accent-crimson" />;
   
   if (isResolved) {
     badgeText = "VERIFIED";
-    badgeStyle = "text-emerald-700 bg-emerald-100/50";
-    containerStyle = "bg-emerald-50 border-emerald-100";
-    icon = <CheckCircle2 className="h-4 w-4 text-emerald-600" />;
-  } else if (entity.error === "AMBIGUOUS MATCH") {
+    badgeStyle = "text-accent-emerald bg-accent-emerald/10 border-accent-emerald/20";
+    containerStyle = "bg-navy-base border-accent-emerald/30";
+    icon = <CheckCircle2 className="h-4 w-4 text-accent-emerald" />;
+  } else if (entity.status === "NEEDS VERIFICATION") {
     badgeText = "NEEDS VERIFICATION";
-    badgeStyle = "text-amber-700 bg-amber-100/50";
-    containerStyle = "bg-amber-50 border-amber-100";
-    icon = <AlertCircle className="h-4 w-4 text-amber-500" />;
+    badgeStyle = "text-accent-amber bg-accent-amber/10 border-accent-amber/20";
+    containerStyle = "bg-navy-base border-accent-amber/30";
+    icon = <AlertCircle className="h-4 w-4 text-accent-amber" />;
   }
   
   return (
@@ -231,20 +236,20 @@ const VerificationRow = ({ label, entity }) => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {icon}
-          <span className="font-semibold text-sm text-slate-800">{label}</span>
+          <span className="font-semibold text-sm text-foreground">{label}</span>
         </div>
-        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${badgeStyle}`}>
+        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${badgeStyle}`}>
           {badgeText}
         </span>
       </div>
-      {isResolved && (
-        <div className="mt-2 text-xs text-slate-600 space-y-1 pl-6">
-          <div><span className="text-slate-400">ID:</span> <span className="font-mono">{entity.db_id}</span></div>
-          {entity.name && <div><span className="text-slate-400">Name:</span> {entity.name}</div>}
+      {isResolved && entity.matched_record && (
+        <div className="mt-2 text-xs text-slate-muted space-y-1 pl-6">
+          <div><span className="text-slate-muted/70">ID:</span> <span className="font-mono text-foreground">{entity.matched_record.id}</span></div>
+          {entity.matched_record.name && <div><span className="text-slate-muted/70">Name:</span> <span className="text-foreground">{entity.matched_record.name}</span></div>}
         </div>
       )}
-      {!isResolved && entity.error === "AMBIGUOUS MATCH" && (
-        <div className="mt-2 text-xs text-amber-800 space-y-1 pl-6 font-medium">
+      {!isResolved && entity.status === "NEEDS VERIFICATION" && (
+        <div className="mt-2 text-xs text-accent-amber space-y-1 pl-6 font-medium">
           AMBIGUOUS MATCH
         </div>
       )}

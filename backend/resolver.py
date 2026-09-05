@@ -66,7 +66,7 @@ def parse_shipment_id(id_str: str) -> str:
     return str(id_str).strip().upper()
 
 def resolve_entities(db, extracted_data: dict) -> dict:
-    import models
+    from backend import models
     results = {}
     
     # Resolve Supplier
@@ -168,5 +168,10 @@ def resolve_entities(db, extracted_data: dict) -> dict:
             "matched_record": matched_record,
             "candidates": cands
         }
+        
+    for k in ['disruption_type', 'original_eta', 'revised_eta', 'quantity', 'location']:
+        if k in extracted_data:
+            results[k] = extracted_data[k]
+            
         
     return results

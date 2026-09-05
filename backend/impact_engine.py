@@ -2,7 +2,7 @@ import datetime
 from typing import List, Dict, Any
 
 def calculate_impact(db, disruption_id: int) -> Dict[str, Any]:
-    import models
+    from backend import models
     disruption = db.query(models.Disruption).filter(models.Disruption.id == disruption_id).first()
     
     if not disruption or not disruption.extracted_entities:
@@ -53,14 +53,28 @@ def calculate_impact(db, disruption_id: int) -> Dict[str, Any]:
     max_delay = 0
     
     # Determine the revised ETA for this disruption
-    revised_eta_str = entities.get('revised_eta') # This comes from AI extraction, assuming ISO format or parsed
-    revised_eta = None
-    if revised_eta_str and isinstance(revised_eta_str, str):
-         # Try to parse string or just fallback to 14 days delay
-         pass
+    revised_eta_str = entities.get('revised_eta')
+    original_eta_str = entities.get('original_eta')
     
-    # For now, if no revised ETA, simulate a 10 day delay.
     delay_days_incurred = 10 
+    
+    if revised_eta_str and original_eta_str:
+        try:
+            rev_date = datetime.datetime.strptime(revised_eta_str, "%Y-%m-%d")
+            orig_date = datetime.datetime.strptime(original_eta_str, "%Y-%m-%d")
+            calc_delay = (rev_date - orig_date).days
+            if calc_delay > 0:
+                delay_days_incurred = calc_delay
+        except ValueError:
+            pass
+    elif revised_eta_str:
+        try:
+            rev_date = datetime.datetime.strptime(revised_eta_str, "%Y-%m-%d")
+            calc_delay = (rev_date - datetime.datetime.now()).days
+            if calc_delay > 0:
+                delay_days_incurred = calc_delay
+        except ValueError:
+            pass 
     
     for product_id in products_to_trace:
         product = db.query(models.Product).filter(models.Product.id == product_id).first()
@@ -140,7 +154,7 @@ def calculate_impact(db, disruption_id: int) -> Dict[str, Any]:
             max_delay = max(max_delay, delay_days)
             
             affected_orders.append({
-                "order_id": f"ORD-{order.id}",
+                "order_id": order.id if str(order.id).startswith("ORD-") else f"ORD-{order.id}",
                 "customer_name": customer.name,
                 "product_sku": product.sku,
                 "quantity_required": order.quantity,
@@ -179,6 +193,41 @@ def calculate_impact(db, disruption_id: int) -> Dict[str, Any]:
     if len(affected_orders) == 0 and total_shortage == 0:
         impact_level = "ZERO"
 
+    inventory_info = None
+    if products_to_trace:
+        first_product_id = products_to_trace[0]
+        prod_model = db.query(models.Product).filter(models.Product.id == first_product_id).first()
+        inventories = db.query(models.Inventory).filter(models.Inventory.product_id == first_product_id).all()
+        avail = sum([(inv.stock_level - inv.reserved_quantity) for inv in inventories])
+        res = sum([inv.reserved_quantity for inv in inventories])
+        inventory_info = {
+            "product": prod_model.sku if prod_model else "Unknown",
+            "available": avail,
+            "reserved": res,
+            "shortage": total_shortage > 0,
+            "shortage_amount": total_shortage
+        }
+        
+    supplier_info = None
+    if supplier_data:
+        supplier_info = {"name": supplier_data.get('name', 'Unknown Supplier')}
+    elif shipment and shipment.product:
+        supplier_info = {"name": shipment.product.supplier.name}
+
+    shipment_info = None
+    if shipment:
+        shipment_info = {
+            "id": shipment.id if str(shipment.id).startswith("SHP-") else f"SHP-{shipment.id}",
+            "original_eta": original_eta_str or (shipment.eta.strftime("%Y-%m-%d") if shipment.eta else "Unknown"),
+            "revised_eta": revised_eta_str or "Unknown"
+        }
+    elif shipment_data:
+        shipment_info = {
+            "id": shipment_data.get("id"),
+            "original_eta": original_eta_str or "Unknown",
+            "revised_eta": revised_eta_str or "Unknown"
+        }
+
     return {
         "summary": {
             "total_orders_affected": len(affected_orders),
@@ -190,5 +239,9 @@ def calculate_impact(db, disruption_id: int) -> Dict[str, Any]:
             "pending_shipments_count": pending_shipments
         },
         "trace_path": trace_path,
-        "affected_orders": affected_orders
+        "affected_orders": affected_orders,
+        "orders": affected_orders,
+        "supplier": supplier_info,
+        "shipment": shipment_info,
+        "inventory": inventory_info
     }

@@ -3,8 +3,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import datetime
-from main import app, get_db
-from models import Base, Supplier, Product, Warehouse, Inventory, Shipment, Customer, Order, Disruption, Decision
+from backend.main import app, get_db
+from backend.models import Base, Supplier, Product, Warehouse, Inventory, Shipment, Customer, Order, Disruption, Decision
 
 from sqlalchemy.pool import StaticPool
 

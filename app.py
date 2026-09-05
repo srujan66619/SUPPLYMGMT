@@ -1,8 +1,7 @@
 import sys
 import os
 
-# Add backend to Python path so imports work from project root
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "backend"))
+# Backend is now treated as a regular package
 
 import uvicorn
 from fastapi import FastAPI, Depends, HTTPException, Request
@@ -12,11 +11,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import time
 
-from database import engine, Base, get_db
+from backend.database import engine, Base, get_db
 from sqlalchemy.orm import Session
-import models
-import api
-from ai_engine import analyze_disruption_notice, ExtractedEntities
+from backend import models
+from backend import api
+from backend.ai_engine import analyze_disruption_notice, ExtractedEntities
 
 # ── Resolve paths relative to this file, not cwd ──────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

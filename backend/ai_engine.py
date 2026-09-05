@@ -6,16 +6,24 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Client will automatically pick up GEMINI_API_KEY from environment
-client = genai.Client()
+# Client initialized lazily
+client = None
+
+def get_gemini_client():
+    api_key = os.getenv("GEMINI_API_KEY")
+
+    if not api_key:
+        return None
+
+    return genai.Client(api_key=api_key)
 
 class ExtractedEntities(BaseModel):
     suppliers: list[str] = Field(description="List of supplier names mentioned.")
     products_or_skus: list[str] = Field(description="List of product names or SKUs mentioned.")
     is_delay: bool = Field(description="True if the notice indicates a delay.")
-    delay_days: int | None = Field(description="Number of days delayed, if specified.")
+    delay_days: int = Field(default=0, description="Number of days delayed, if specified. Use 0 if not found.")
     is_shortage: bool = Field(description="True if the notice indicates a stock shortage or reduction.")
-    shortage_quantity: int | None = Field(description="The exact quantity short, if specified.")
+    shortage_quantity: int = Field(default=0, description="The exact quantity short, if specified. Use 0 if not found.")
 
 def analyze_disruption_notice(notice_text: str) -> ExtractedEntities:
     prompt = f"""
@@ -28,7 +36,11 @@ def analyze_disruption_notice(notice_text: str) -> ExtractedEntities:
     {notice_text}
     """
     
-    response = client.models.generate_content(
+    active_client = client if client is not None else get_gemini_client()
+    if not active_client:
+        raise Exception("Gemini API key is missing")
+        
+    response = active_client.models.generate_content(
         model='gemini-2.5-flash',
         contents=prompt,
         config=types.GenerateContentConfig(
